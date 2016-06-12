@@ -1196,12 +1196,12 @@ describe Toshi::Processor do
 
       # test more unconfirmed address values
       address = blockchain.address_from_label('A')
-      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.unspent_outputs.sum(:amount)).to eq(10 * 10**8)
+      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.unspent_amount).to eq(10 * 10**8)
       address = blockchain.address_from_label('B')
-      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.unspent_outputs.sum(:amount)).to eq(10 * 10**8)
+      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.unspent_amount).to eq(10 * 10**8)
       address = blockchain.address_from_label('C')
-      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.unspent_outputs.sum(:amount)).to eq(30 * 10**8)
-      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.spent_outputs.sum(:amount)).to eq(40 * 10**8)
+      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.unspent_amount).to eq(30 * 10**8)
+      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.spent_amount).to eq(40 * 10**8)
     end
 
     # while this handling is not completely desirable we should test that
@@ -1258,6 +1258,108 @@ describe Toshi::Processor do
       expect(Toshi::Models::Address.where(address: address).first.balance).to eq(COINBASE_REWARD/2)
       address = blockchain.address_from_label('C')
       expect(Toshi::Models::Address.where(address: address).first.balance).to eq(COINBASE_REWARD/2)
+    end
+
+    # See: https://github.com/coinbase/toshi/issues/127#issuecomment-64065626
+    it "conflicts shouldn't count as rightful spenders when accepting a tx to the mempool" do
+      processor = Toshi::Processor.new
+      blockchain = Blockchain.new
+
+      blockchain.load_from_json("simple_chain_1.json")
+      last_height, last_block = 0, nil
+      blockchain.chain['main'].each{|height, block|
+        processor.process_block(block, raise_errors=true)
+        last_height, last_block = height.to_i, block
+      }
+
+      prev_tx = blockchain.chain['main']['7'].tx[1]
+
+      # build a tx
+      key_A = blockchain.new_key('A')
+      tx = build_nonstandard_tx(blockchain, [prev_tx], [0], ver=Toshi::CURRENT_TX_VERSION, lock_time=nil, output_pk_script=nil, key_A)
+
+      # accept it into the memory pool
+      processor.process_transaction(tx, raise_errors=true)
+
+      # build a block with a Finney double-spend of the prevout spent by the tx above and a spend of that tx
+      key_B = blockchain.new_key('B')
+      key_C = blockchain.new_key('C')
+      tx2 = build_nonstandard_tx(blockchain, [prev_tx], [0], ver=Toshi::CURRENT_TX_VERSION, lock_time=nil, output_pk_script=nil, key_B)
+      tx3 = build_nonstandard_tx(blockchain, [tx2], [0], ver=Toshi::CURRENT_TX_VERSION, lock_time=nil, output_pk_script=nil, key_C)
+      time = last_block.time+=Bitcoin.network[:next_block_time_target]
+      new_block = blockchain.build_next_block(last_block, last_height+1, [tx2, tx3], time)
+      processor.process_block(new_block, raise_errors=true)
+
+      # verify conflict
+      expect(Toshi::Models::UnconfirmedTransaction.where(hsh: tx.hash).first.pool).to eq(Toshi::Models::UnconfirmedTransaction::CONFLICT_POOL)
+
+      # verify expected balances
+      address = blockchain.address_from_label('A')
+      expect(Toshi::Models::UnconfirmedAddress.where(address: address).first.balance).to eq(0)
+      address = blockchain.address_from_label('B')
+      expect(Toshi::Models::Address.where(address: address).first.balance).to eq(0)
+      address = blockchain.address_from_label('C')
+      expect(Toshi::Models::Address.where(address: address).first.balance).to eq(COINBASE_REWARD/2)
+
+      # build two more blocks to trigger a reorg
+      time = last_block.time+=Bitcoin.network[:next_block_time_target]
+      new_block2 = blockchain.build_next_block(last_block, last_height+1, [], time)
+      processor.process_block(new_block2, raise_errors=true)
+
+      time += Bitcoin.network[:next_block_time_target]
+      new_block3 = blockchain.build_next_block(new_block2, last_height+2, [], time)
+      processor.process_block(new_block3, raise_errors=true)
+
+      # verify expected chainstate
+      expect(Toshi::Models::Block.where(hsh: new_block.hash).first.branch).to eq(Toshi::Models::Block::SIDE_BRANCH)
+      expect(Toshi::Models::Block.head.hsh).to eq(new_block3.hash)
+
+      # verify expected mempool state
+      expect(Toshi::Models::UnconfirmedTransaction.where(pool: Toshi::Models::UnconfirmedTransaction::MEMORY_POOL).count).to eq(2)
+      expect(Toshi::Models::UnconfirmedTransaction.where(hsh: tx2.hash).first.pool).to eq(Toshi::Models::UnconfirmedTransaction::MEMORY_POOL)
+      expect(Toshi::Models::UnconfirmedTransaction.where(hsh: tx3.hash).first.pool).to eq(Toshi::Models::UnconfirmedTransaction::MEMORY_POOL)
+
+      # verify the conflict
+      expect(Toshi::Models::UnconfirmedTransaction.where(pool: Toshi::Models::UnconfirmedTransaction::CONFLICT_POOL).count).to eq(1)
+      expect(Toshi::Models::UnconfirmedTransaction.where(hsh: tx.hash).first.pool).to eq(Toshi::Models::UnconfirmedTransaction::CONFLICT_POOL)
+    end
+
+    it 'handles BIP66 block version switch-over' do
+      processor = Toshi::Processor.new
+      blockchain = Blockchain.new
+      Bitcoin.network = :bitcoin
+
+      blockchain.load_from_json("bip66_test.json")
+
+      # find the two rejects
+      expect(blockchain.chain['reject'].values.size).to eq(2)
+      expected_reject_1 = blockchain.chain['reject'].values.first.hash
+      expected_reject_2 = blockchain.chain['reject'].values.last.hash
+      reject_1, reject_2 = nil, nil
+
+      blockchain.blocks.each do |block|
+        height = Toshi::Models::Block.max_height
+        if reject_1 == nil && height == 850
+          # attempts to use a non-DERSIG compliant signature
+          reject_1 = block.hash
+          expect {
+            processor.process_block(block, raise_errors=true)
+          }.to raise_error(Toshi::Processor::TxValidationError, "Script evaluation failed")
+        elsif reject_2 == nil && height == 1051
+          # attempts a v2 block post-switchover
+          expect(block.ver).to eq(2)
+          reject_2 = block.hash
+          expect {
+            processor.process_block(block, raise_errors=true)
+          }.to raise_error(Toshi::Processor::BlockValidationError, "AcceptBlock() : rejected nVersion=2 block #{block.hash}")
+        else
+          processor.process_block(block, raise_errors=true)
+        end
+      end
+
+      expect(reject_1).to eq(expected_reject_1)
+      expect(reject_2).to eq(expected_reject_2)
+      expect(Toshi::Models::Block.max_height).to eq(1052)
     end
   end
 end

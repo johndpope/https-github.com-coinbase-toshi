@@ -63,23 +63,40 @@ This is the easiest way to get up and running. You can also run your own version
 
 ### Running Toshi locally
 
-Toshi uses [Vagrant](http://www.vagrantup.com/) to install and run all prerequisites (postgresql, redis).
-
     $ git clone https://github.com/coinbase/toshi.git
     $ cd toshi
-    $ vagrant up
-    $ createdb -U postgres -h 127.0.0.1 -p 21001 toshi_development
-    $ createdb -U postgres -h 127.0.0.1 -p 21001 toshi_test
-    $ gem install bundler
-    $ bundle install
-    $ bundle exec rake db:migrate
-    $ foreman start
-    $ open http://localhost:5000/
 
-Alternatively, you can use [Docker](https://www.docker.com/):
+We use [Docker](https://www.docker.com/) with
+[Docker Compose](http://docs.docker.com/compose/install/):
 
-    $ docker build -t=coinbase/node .
-    $ docker run -e REDIS_URL=redis://... -e DATABASE_URL=postgres://... -e TOSHI_ENV=production coinbase/node foreman start
+    $ docker-compose build
+    $ docker-compose start db
+    $ docker-compose run web bundle exec rake db:create
+
+    $ docker-compose build # run this before `up` to run the latest code
+    $ docker-compose up
+    $ open localdocker:5000 # use `boot2docker ip` for the address if using boot2docker
+
+## Testing
+
+You can run the test suite for Toshi as follows:
+
+    $ git submodule init
+    $ git submodule update
+    $ docker-compose build
+    $ docker-compose run -e TOSHI_ENV=test web bundle exec rake db:create
+
+    $ docker-compose run -e TOSHI_ENV=test web bundle exec rspec
+
+
+### Bootstrap.dat
+
+Toshi can import the standard `bootstrap.dat` file that bitcoind uses to load
+the beginning of the blockchain using the `./bin/bootstrap.rb` command.
+
+    export BOOTSTRAP_FILE=/path/to/bootstrap.dat
+    export TOSHI_ENV=production
+    ./bin/bootstrap.rb
 
 ### Deployment
 
@@ -147,12 +164,6 @@ Toshi parses `config/toshi.yml` according to its current environment (determined
 
 Toshi will use the `config/toshi.yml.example` file if the `config/toshi.yml` file does not exist.
 
-## Testing
-
-You can run the test suite for Toshi as follows:
-
-    $ rake db:create TOSHI_ENV=test
-    $ rspec
 
 ## Contributing
 
