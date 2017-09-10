@@ -1,20 +1,21 @@
 development: &development
-  database_url: <%= ENV['DATABASE_URL'] || 'postgres://postgres:@db:5432/toshi_development' %>
+# changed this as the ./bin/bootstrap is not picking up production environment settings
+  database_url: <%= ENV['DATABASE_URL'] || 'postgres://postgres:@192.168.0.16:5432/toshi_production' %>
   log_level: <%= ENV['LOG_LEVEL'] || 'debug' %>
   max_peers: 8
-  network: <%= ENV['TOSHI_NETWORK'] || 'testnet3' %>
+  network: <%= ENV['TOSHI_NETWORK'] || 'bitcoin' %>
   peers: []
   redis_url: <%= ENV['REDIS_URL'] || 'redis://redis/0' %>
 
 test:
   <<: *development
-  database_url: <%= ENV['DATABASE_URL'] || 'postgres://postgres:@db:5432/toshi_test' %>
+  database_url: <%= ENV['DATABASE_URL'] || 'postgres://postgres:@192.168.0.16:5432/toshi_test' %>
   log_level: <%= ENV['LOG_LEVEL'] || 'info' %>
   max_peers: 1
   redis_url: <%= ENV['REDIS_URL'] || 'redis://redis/1' %>
 
 production:
-  database_url: <%= ENV['DATABASE_URL']|| 'postgres://postgres:@db:5432/toshi_production' %>
+  database_url: <%= ENV['DATABASE_URL']|| 'postgres://postgres:@192.168.0.16:5432/toshi_production' %>
   log_level: <%= ENV['LOG_LEVEL'] || 'info' %>
   max_peers: 8
   network: <%= ENV['TOSHI_NETWORK'] || 'bitcoin' %>
