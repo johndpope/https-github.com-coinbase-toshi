@@ -1,8 +1,8 @@
 docker-compose build
 docker-compose start db 
-#docker-compose run web bundle exec rake db:create
+docker-compose run web bundle exec rake db:create
 docker-compose run -e TOSHI_ENV=production web bundle exec bundle install  
 docker-compose run -e TOSHI_ENV=production web bundle exec rake db:create db:migrate 
 docker-compose build  # run this before `up` to run the latest code
 docker-compose up 
-#open localdocker:5000 # use `boot2docker ip` for the address if using boot2docker
+#open http://0.0.0.0:5000 
