@@ -199,3 +199,6 @@ launchctl load ~/Library/LaunchAgents/homebrew.mxcl.postgresql.plist
 
 
 use the postgres.app https://postgresapp.com/ to inspect configuration  as well as restart db server.
+
+
+## TO PREVENT DATA LOSS / booting up from runme.sh script  - comment out db:create db:migrate line
