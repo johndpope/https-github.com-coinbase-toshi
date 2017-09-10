@@ -14,7 +14,7 @@ test:
   redis_url: <%= ENV['REDIS_URL'] || 'redis://redis/1' %>
 
 production:
-  database_url: <%= ENV['DATABASE_URL']|| 'postgres://postgres:@0.0.0.0:5432/johndpope' %>
+  database_url: <%= ENV['DATABASE_URL']|| 'postgres://postgres:@db:5432/toshi_production' %>
   log_level: <%= ENV['LOG_LEVEL'] || 'info' %>
   max_peers: 8
   network: <%= ENV['TOSHI_NETWORK'] || 'bitcoin' %>
