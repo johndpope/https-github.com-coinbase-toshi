@@ -171,3 +171,16 @@ Toshi will use the `config/toshi.yml.example` file if the `config/toshi.yml` fil
 2. Run existing tests with `bundle exec rspec` and add a new test for your changes if applicable.
 3. Commit your changes and push to your fork `git push origin master`
 4. Create a new pull request and submit it back to the project.
+
+
+## OSX TROUBLESHOOTING
+
+if you run into a problem with     
+Could not find json-1.8.1 in any of the sources
+https://ubuntuforums.org/showthread.php?t=2329304
+
+#INSTALL RVM - ruby version manager (for gems)    
+curl -sSL https://get.rvm.io | bash        
+rvm install ruby-2.1.1    
+gem install bundler      
+bundle install   
