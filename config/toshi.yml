@@ -1,0 +1,23 @@
+development: &development
+  database_url: <%= ENV['DATABASE_URL'] || 'postgres://postgres:@db:5432/toshi_development' %>
+  log_level: <%= ENV['LOG_LEVEL'] || 'debug' %>
+  max_peers: 8
+  network: <%= ENV['TOSHI_NETWORK'] || 'testnet3' %>
+  peers: []
+  redis_url: <%= ENV['REDIS_URL'] || 'redis://redis/0' %>
+
+test:
+  <<: *development
+  database_url: <%= ENV['DATABASE_URL'] || 'postgres://postgres:@db:5432/toshi_test' %>
+  log_level: <%= ENV['LOG_LEVEL'] || 'info' %>
+  max_peers: 1
+  redis_url: <%= ENV['REDIS_URL'] || 'redis://redis/1' %>
+
+production:
+  database_url: <%= ENV['DATABASE_URL']|| 'postgres://postgres:@0.0.0.0:5432/johndpope' %>
+  log_level: <%= ENV['LOG_LEVEL'] || 'info' %>
+  max_peers: 8
+  network: <%= ENV['TOSHI_NETWORK'] || 'bitcoin' %>
+  peers: <%= ENV['TOSHI_PEERS'].to_s.split(';') %>
+  redis_url: <%= ENV['REDIS_URL'] || ENV['REDISTOGO_URL'] || ENV['OPENREDIS_URL'] || 'redis://redis/0' %>
+  
