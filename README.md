@@ -184,3 +184,18 @@ curl -sSL https://get.rvm.io | bash
 rvm install ruby-2.1.1    
 gem install bundler      
 bundle install   
+
+
+## 64GB docker container woes . 
+to persist with OSX + docker - you use a local postgres db on host machine.       
+https://stackoverflow.com/questions/31249112/allow-docker-container-to-connect-to-a-local-host-postgres-database#_=_
+IMPORTANT - make sure you're editing correct config files.
+
+
+brew install postgresql --with-python
+brew install mariadb
+brew install mongodb
+launchctl load ~/Library/LaunchAgents/homebrew.mxcl.postgresql.plist
+
+
+use the postgres.app https://postgresapp.com/ to inspect configuration  as well as restart db server.
