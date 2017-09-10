@@ -1,9 +1,9 @@
 GIT
-  remote: git://github.com/lian/bitcoin-ruby.git
-  revision: 69123208d45a19da446c5e0079d4fa2e225e5be6
-  ref: 69123208d45a19da446c5e0079d4fa2e225e5be6
+  remote: git://github.com/astrolite/bitcoin-ruby.git
+  revision: 00335850881679ad896bf630f36c056bae95cba1
+  branch: master
   specs:
-    bitcoin-ruby (0.0.6)
+    bitcoin-ruby (0.0.10)
 
 GEM
   remote: https://rubygems.org/
@@ -103,6 +103,7 @@ DEPENDENCIES
   bitcoin-ruby!
   bugsnag-em
   builder
+  bundler (= 1.15.4)
   database_cleaner
   eventmachine
   faye-websocket
@@ -119,3 +120,6 @@ DEPENDENCIES
   sidekiq
   sinatra
   sinatra-contrib
+
+BUNDLED WITH
+   1.15.4

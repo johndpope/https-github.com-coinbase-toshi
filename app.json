@@ -12,7 +12,7 @@
   "env": {
     "TOSHI_NETWORK": {
       "description": "Specifies which network to connect to (one of `bitcoin` or `testnet3`)",
-      "value": "testnet3"
+      "value": "bitcoin"
     },
     "TOSHI_ENV": "production"
   },

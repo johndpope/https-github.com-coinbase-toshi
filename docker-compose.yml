@@ -6,7 +6,7 @@ web: &web
   ports:
    - "5000:5000"
   environment:
-    TOSHI_ENV: development
+    TOSHI_ENV: production
   command: bundle exec puma
 blockworker:
   <<: *web
@@ -24,3 +24,4 @@ db:
   image: "postgres:9.3"
 redis:
   image: "redis:2.8"
+  
