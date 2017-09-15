@@ -23,5 +23,5 @@ peermanager:
 db:
   image: "postgres:9.6"
 redis:
-  image: "redis:2.8"
+  image: "redis"
   

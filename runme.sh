@@ -1,3 +1,5 @@
+echo "start redis server locally"
+redis-server --protected-mode no &
 docker-compose build
 docker-compose start db 
 docker-compose run web bundle exec rake db:create
