@@ -21,7 +21,7 @@ peermanager:
   ports: []
   command: bundle exec ruby bin/peer_manager.rb
 db:
-  image: "postgres:9.3"
+  image: "postgres:9.6"
 redis:
   image: "redis:2.8"
   
